@@ -4,7 +4,6 @@ import { AdminService } from '../../admin/admin.service';
 import { AbstractBaseService } from '../../basic/abstract-base.service';
 import { normalizeNonNegativeNumber } from '../../basic/helpers/normalize.helper';
 import { LanguageEnum } from '../../basic/model/language.enum';
-import { MatchDefaultsEnum } from '../../basic/model/match-defaults.enum';
 import { WorldCupFeatureApiService } from '../../basic/world-cup-feature-api.service';
 import {
   CurrentWorldCupApiResponse,
@@ -113,54 +112,40 @@ export class SimulationService extends AbstractBaseService {
   ): Promise<FinalistPreview> {
     const normalizedTeamId = (teamId ?? '').trim().toLowerCase();
 
-    try {
-      const stats: TeamStatsApiResponse = await this.worldCupFeatureApiService.getTeamStats(
-        normalizedTeamId,
-        lang,
-      );
-      const catalog: TeamCatalogApiItem[] = await this.worldCupFeatureApiService.listTeams(
-        normalizedTeamId,
-      );
+    const stats: TeamStatsApiResponse = await this.worldCupFeatureApiService.getTeamStats(
+      normalizedTeamId,
+      lang,
+    );
+    const catalog: TeamCatalogApiItem[] = await this.worldCupFeatureApiService.listTeams(
+      normalizedTeamId,
+    );
 
-      const team = Array.isArray(catalog) ? (catalog[0] as TeamCatalogApiItem | undefined) : undefined;
-      const strategy = (stats?.current_strategy ?? MatchDefaultsEnum.STRATEGY).trim().toUpperCase();
-      const formation = (stats?.current_formation ?? MatchDefaultsEnum.FORMATION).trim();
+    const team = Array.isArray(catalog) ? (catalog[0] as TeamCatalogApiItem | undefined) : undefined;
+    const strategy = (stats?.current_strategy).trim().toUpperCase();
+    const formation = (stats?.current_formation).trim();
 
-      return {
-        teamId: normalizedTeamId,
-        teamName: (team?.name ?? fallbackName).trim(),
-        attack: normalizeNonNegativeNumber(stats?.attack),
-        defense: normalizeNonNegativeNumber(stats?.defense),
-        midfield: normalizeNonNegativeNumber(stats?.midfield),
-        overall: normalizeNonNegativeNumber(stats?.overall),
-        coachName: (team?.coach ?? 'N/A').trim(),
-        formation: formation || MatchDefaultsEnum.FORMATION,
-        strategy,
-        strategyLabel: strategy.replace(/_/g, ' '),
-      };
-    } catch {
-      return {
-        teamId: normalizedTeamId,
-        teamName: (fallbackName ?? normalizedTeamId.toUpperCase()).trim(),
-        attack: 0,
-        defense: 0,
-        midfield: 0,
-        overall: 0,
-        coachName: 'N/A',
-        formation: MatchDefaultsEnum.FORMATION,
-        strategy: MatchDefaultsEnum.STRATEGY,
-        strategyLabel: MatchDefaultsEnum.STRATEGY,
-      };
-    }
+    return {
+      teamId: normalizedTeamId,
+      teamName: (team?.name ?? fallbackName).trim(),
+      attack: normalizeNonNegativeNumber(stats?.attack),
+      defense: normalizeNonNegativeNumber(stats?.defense),
+      midfield: normalizeNonNegativeNumber(stats?.midfield),
+      overall: normalizeNonNegativeNumber(stats?.overall),
+      coachName: (team?.coach ?? 'N/A').trim(),
+      formation: formation,
+      strategy,
+      strategyLabel: strategy.replace(/_/g, ' '),
+    };
+
   }
 
   /** Checks whether current world cup payload includes both finalists. */
   private hasFinalists(worldCup: CurrentWorldCupApiResponse): boolean {
     return Boolean(
       worldCup?.finalHomeTeamId &&
-        worldCup?.finalHomeTeamName &&
-        worldCup?.finalAwayTeamId &&
-        worldCup?.finalAwayTeamName,
+      worldCup?.finalHomeTeamName &&
+      worldCup?.finalAwayTeamId &&
+      worldCup?.finalAwayTeamName,
     );
   }
 
